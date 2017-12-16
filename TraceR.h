@@ -26,6 +26,7 @@ public:
 
 	glm::vec3 trace(const Ray& r, int depth);
 	void render_line(int y);
+	int get_line();
 	void render();
 
 private:

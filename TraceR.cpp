@@ -65,9 +65,12 @@ void TraceR::render_line(int y)
 
 		write_pixel(x, y, gamma_corrected);
 	}
+}
 
+int TraceR::get_line()
+{
 	std::lock_guard<std::mutex> guard(lines_traced_mutex);
-	printf("%d lines traced\n", lines_traced++);
+	return lines_traced++;
 }
 
 void TraceR::render()
@@ -77,17 +80,17 @@ void TraceR::render()
 	hittables[1] = new Sphere(glm::vec3(0, -10000.5f, -1), 10000.0f);
 	world = new HittableList(hittables, 2);
 
-	int thread_num = std::thread::hardware_concurrency();
-	int segment_size = height / thread_num;
-
 	typedef std::thread* thread_ptr;
+	int thread_num = std::thread::hardware_concurrency();
 	thread_ptr* threads = new thread_ptr[thread_num];
 	for (int i = 0; i < thread_num; i++)
-		threads[i] = new std::thread([this](int y_from, int y_to)
+		threads[i] = new std::thread([this]()
 		{
-			for (int y = y_from; y < y_to; y++)
-				this->render_line(y);
-		}, segment_size * i, segment_size * (i + 1));
+			for (int y = get_line(); 0 <= y && y < height; y = get_line()) {
+				printf("tracing line %d\n", y);
+				render_line(y);
+			}
+		});
 	for (int i = 0; i < thread_num; i++)
 	{
 		threads[i]->join();
